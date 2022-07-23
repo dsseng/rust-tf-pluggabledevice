@@ -1,16 +1,6 @@
-[package]
-name = "tfp"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-[lib]
-name = "tfp"
-crate-type = ["rlib", "cdylib"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-libc = "0.2.126"
-
-[build-dependencies]
-bindgen = "0.60"
+members = [
+    "bindings",
+    "plugin",
+]

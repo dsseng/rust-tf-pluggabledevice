@@ -2,28 +2,21 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    // TODO: support other versions aside from 3.10
-    println!(
-        "cargo:rustc-link-search={}",
-        PathBuf::from("./venv/lib/python3.10/site-packages/tensorflow/python/")
-            .to_str()
-            .unwrap()
-    );
-    // TODO: support other OSs, not only Linux
-    println!("cargo:rustc-link-arg=-l:_pywrap_tensorflow_internal.so");
     println!("cargo:rerun-if-changed=wrapper.hh");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
     // the resulting bindings.
+
+    // TODO: support other versions aside from 3.10
     let bindings = bindgen::Builder::default()
         .clang_arg(
             "-I".to_owned()
-                + PathBuf::from("./venv/lib/python3.10/site-packages/tensorflow/include/")
+                + PathBuf::from("../venv/lib/python3.10/site-packages/tensorflow/include/")
                     .to_str()
                     .unwrap(),
         )
-        // Exported by this crate, not imported
+        // Exported by plugin, not imported
         .blocklist_function("SE_InitPlugin")
         .blocklist_function("TF_InitGraph")
         .blocklist_function("TF_InitKernel")
