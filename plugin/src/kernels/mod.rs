@@ -4,5 +4,5 @@ mod relu;
 
 #[no_mangle]
 pub extern "C" fn TF_InitKernel() {
-    relu::init_relu_kernel();
+    relu::init();
 }

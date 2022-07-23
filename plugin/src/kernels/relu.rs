@@ -7,17 +7,22 @@ use crate::{
 static RELU_KERNEL_NAME: &str = "Relu\0";
 static RELU_OP_NAME: &str = "ReluOp\0";
 
-pub fn init_relu_kernel() {
-    KernelBuilder::new(RELU_KERNEL_NAME, RELU_OP_NAME, DEVICE_TYPE)
+struct ReluKernel {}
+
+pub fn init() {
+    KernelBuilder::<ReluKernel>::new(RELU_KERNEL_NAME, RELU_OP_NAME, DEVICE_TYPE)
         .constraint(TYPE_CONSTRAINT_T, TF_FLOAT)
-        .compute(relu_kernel_compute)
+        .create(create)
+        .compute(compute)
+        .delete(delete)
         .register()
 }
 
-pub unsafe extern "C" fn relu_kernel_compute(
-    _kernel: *mut ::std::os::raw::c_void,
-    ctx: *mut TF_OpKernelContext,
-) {
+unsafe extern "C" fn create(_construction: *mut TF_OpKernelConstruction) -> *mut ReluKernel {
+    Box::into_raw(Box::new(ReluKernel {}))
+}
+
+unsafe extern "C" fn compute(_kernel: *mut ReluKernel, ctx: *mut TF_OpKernelContext) {
     let mut input_ptr = 0 as *mut TF_Tensor;
     let status_ptr = TF_NewStatus();
 
@@ -64,4 +69,8 @@ pub unsafe extern "C" fn relu_kernel_compute(
             false => 0f32,
         };
     }
+}
+
+unsafe extern "C" fn delete(kernel: *mut ReluKernel) {
+    std::mem::drop(Box::from_raw(kernel))
 }

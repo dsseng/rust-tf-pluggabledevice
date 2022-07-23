@@ -1,19 +1,18 @@
-use ::std::os::raw::c_void;
 use std::collections::HashMap;
 
 use super::raw::*;
 
-pub struct KernelBuilder {
+pub struct KernelBuilder<T> {
     kernel_name: &'static str,
     op_name: &'static str,
     device_type: &'static str,
     constraints: HashMap<&'static str, TF_DataType>,
-    create_fn: Option<unsafe extern "C" fn(*mut TF_OpKernelConstruction) -> *mut c_void>,
-    compute_fn: Option<unsafe extern "C" fn(*mut c_void, *mut TF_OpKernelContext)>,
-    delete_fn: Option<unsafe extern "C" fn(*mut c_void)>,
+    create_fn: Option<unsafe extern "C" fn(*mut TF_OpKernelConstruction) -> *mut T>,
+    compute_fn: Option<unsafe extern "C" fn(*mut T, *mut TF_OpKernelContext)>,
+    delete_fn: Option<unsafe extern "C" fn(*mut T)>,
 }
 
-impl KernelBuilder {
+impl<T> KernelBuilder<T> {
     pub fn new(
         kernel_name: &'static str,
         op_name: &'static str,
@@ -47,7 +46,7 @@ impl KernelBuilder {
 
     pub fn create(
         mut self,
-        function: unsafe extern "C" fn(*mut TF_OpKernelConstruction) -> *mut c_void,
+        function: unsafe extern "C" fn(*mut TF_OpKernelConstruction) -> *mut T,
     ) -> Self {
         self.create_fn = Some(function);
         self
@@ -55,13 +54,13 @@ impl KernelBuilder {
 
     pub fn compute(
         mut self,
-        function: unsafe extern "C" fn(*mut c_void, *mut TF_OpKernelContext),
+        function: unsafe extern "C" fn(*mut T, *mut TF_OpKernelContext),
     ) -> Self {
         self.compute_fn = Some(function);
         self
     }
 
-    pub fn delete(mut self, function: unsafe extern "C" fn(*mut c_void)) -> Self {
+    pub fn delete(mut self, function: unsafe extern "C" fn(*mut T)) -> Self {
         self.delete_fn = Some(function);
         self
     }
@@ -71,9 +70,9 @@ impl KernelBuilder {
             let builder = TF_NewKernelBuilder(
                 self.kernel_name.as_ptr() as *const i8,
                 self.device_type.as_ptr() as *const i8,
-                self.create_fn,
-                self.compute_fn,
-                self.delete_fn,
+                self.create_fn.map(|x| std::mem::transmute(x)),
+                self.compute_fn.map(|x| std::mem::transmute(x)),
+                self.delete_fn.map(|x| std::mem::transmute(x)),
             );
 
             for (name, dt) in self.constraints {
