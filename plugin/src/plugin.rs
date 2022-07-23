@@ -1,6 +1,6 @@
 use crate::{bindings::raw::*, DEVICE_NAME, DEVICE_TYPE, EMPTY_CSTR};
 
-use std::ptr::null_mut;
+use std::{os::raw::c_void, ptr::null_mut};
 
 #[no_mangle]
 unsafe extern "C" fn SE_InitPlugin(
@@ -47,13 +47,15 @@ unsafe extern "C" fn plugin_create_device(
     status: *mut TF_Status,
 ) {
     (*(*params).device).struct_size = std::mem::size_of::<SP_Device>() as u64;
-    (*(*params).device).device_handle = null_mut();
+    (*(*params).device).device_handle = Box::into_raw(Box::new("magic".to_owned())) as *mut c_void;
 
     (*(*params).device).ordinal = (*params).ordinal;
     TF_SetStatus(status, TF_OK, EMPTY_CSTR.as_ptr() as *const i8);
 }
 
 unsafe extern "C" fn plugin_destroy_device(_platform: *const SP_Platform, device: *mut SP_Device) {
+    std::mem::drop(Box::from_raw((*device).device_handle));
+
     (*device).device_handle = null_mut();
     (*device).ordinal = -1;
 }
@@ -175,15 +177,21 @@ unsafe extern "C" fn plugin_device_memory_usage(
 }
 
 unsafe extern "C" fn plugin_create_stream(
-    _device: *const SP_Device,
-    _stream: *mut SP_Stream,
+    device: *const SP_Device,
+    stream: *mut SP_Stream,
     status: *mut TF_Status,
 ) {
+    *stream = Box::into_raw(Box::new(SP_Stream_st {
+        stream_handle: (*device).device_handle,
+    }));
+
     TF_SetStatus(status, TF_OK, EMPTY_CSTR.as_ptr() as *const i8);
 }
 
 // Destroys SP_Stream and deallocates any underlying resources.
-extern "C" fn plugin_destroy_stream(_device: *const SP_Device, _stream: SP_Stream) {}
+unsafe extern "C" fn plugin_destroy_stream(_device: *const SP_Device, stream: SP_Stream) {
+    std::mem::drop(Box::from_raw(stream))
+}
 
 unsafe extern "C" fn plugin_create_stream_dependency(
     _device: *const SP_Device,

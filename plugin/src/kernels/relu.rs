@@ -23,6 +23,16 @@ unsafe extern "C" fn create(_construction: *mut TF_OpKernelConstruction) -> *mut
 }
 
 unsafe extern "C" fn compute(_kernel: *mut ReluKernel, ctx: *mut TF_OpKernelContext) {
+    let status_ptr = TF_NewStatus();
+    let stream = TF_GetStream(ctx, status_ptr);
+    if TF_GetCode(status_ptr) != TF_OK {
+        TF_OpKernelContext_Failure(ctx, status_ptr);
+        return;
+    }
+
+    let device_data = &*((*stream).stream_handle as *mut String);
+    eprintln!("device passed into kernel: {}", device_data);
+
     let mut input_ptr = 0 as *mut TF_Tensor;
     let status_ptr = TF_NewStatus();
 
