@@ -2,6 +2,14 @@
 
 Ported over from https://github.com/tensorflow/community/pull/352
 
+The `tfp-bindings` crate mostly provides *unsafe* bindings to PluggableDevice API `_pywrap_tensorflow_internal.so` library (yes, and currently in only supports Linux and Python 3.10)
+
+Plugin itself (`tfp-plugin`) should link to that library via its `build.rs` script and implement `SE_InitPlugin` and `TF_InitKernel` functions with proper types (these are excluded from bindgen).
+
+There is a safe abstraction over kernel registration functions, which is mostly because:
+1. There is quite a limited set of features to be easily supported by an OOP API.
+2. This would help with stateful kernels, which benefit from types.
+
 ```bash
 python3.10 -m venv venv
 source venv/bin/activate
