@@ -1,34 +1,17 @@
-use crate::{bindings::raw::*, kernels::TYPE_CONSTRAINT_T, DEVICE_TYPE};
+use crate::{
+    bindings::{kernels::*, raw::*},
+    kernels::TYPE_CONSTRAINT_T,
+    DEVICE_TYPE,
+};
 
 static RELU_KERNEL_NAME: &str = "Relu\0";
 static RELU_OP_NAME: &str = "ReluOp\0";
 
-pub unsafe fn init_relu_kernel() {
-    let builder = TF_NewKernelBuilder(
-        RELU_KERNEL_NAME.as_ptr() as *const i8,
-        DEVICE_TYPE.as_ptr() as *const i8,
-        None,
-        Some(relu_kernel_compute),
-        None,
-    );
-
-    let status = TF_NewStatus();
-    TF_KernelBuilder_TypeConstraint(
-        builder,
-        TYPE_CONSTRAINT_T.as_ptr() as *const i8,
-        TF_FLOAT,
-        status,
-    );
-    if TF_OK != TF_GetCode(status) {
-        eprintln!("Error while registering relu kernel with attribute T");
-        return;
-    }
-
-    TF_RegisterKernelBuilder(RELU_OP_NAME.as_ptr() as *const i8, builder, status);
-    if TF_OK != TF_GetCode(status) {
-        eprintln!("Error while registering relu kernel");
-        return;
-    }
+pub fn init_relu_kernel() {
+    KernelBuilder::new(RELU_KERNEL_NAME, RELU_OP_NAME, DEVICE_TYPE)
+        .constraint(TYPE_CONSTRAINT_T, TF_FLOAT)
+        .compute(relu_kernel_compute)
+        .register()
 }
 
 pub unsafe extern "C" fn relu_kernel_compute(
