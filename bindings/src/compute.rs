@@ -124,6 +124,14 @@ impl TF_OpKernelContext {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct NamedDims {
+    pub n: i64,
+    pub h: i64,
+    pub w: i64,
+    pub c: i64,
+}
+
 impl TF_Tensor {
     pub fn element_count(self: *mut Self) -> i64 {
         unsafe { return TF_TensorElementCount(self) }
@@ -144,5 +152,24 @@ impl TF_Tensor {
         }
 
         dims
+    }
+
+    pub fn dims_named(self: *mut Self, format: String) -> NamedDims {
+        let dims = self.dims();
+
+        assert!(dims.len() == 4);
+        assert!(format.len() == 4);
+
+        let ni = format.find("N").expect("N should be in the format");
+        let hi = format.find("H").expect("H should be in the format");
+        let wi = format.find("W").expect("W should be in the format");
+        let ci = format.find("C").expect("C should be in the format");
+
+        NamedDims {
+            n: dims.get(ni).unwrap().clone(),
+            h: dims.get(hi).unwrap().clone(),
+            w: dims.get(wi).unwrap().clone(),
+            c: dims.get(ci).unwrap().clone(),
+        }
     }
 }
