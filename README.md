@@ -10,6 +10,8 @@ There is a safe abstraction over kernel registration functions, which is mostly 
 1. There is quite a limited set of features to be easily supported by an OOP API.
 2. This would help with stateful kernels, which benefit from types.
 
+## Try it out
+
 ```bash
 python3.10 -m venv venv
 source venv/bin/activate
@@ -26,3 +28,11 @@ python3 test.py
 import tensorflow as tf
 tf.config.list_physical_devices()
 ```
+
+## Running tests
+
+Specifying `LD_LIBRARY_PATH` manually is necessary as of https://github.com/rust-lang/cargo/issues/4044
+
+```
+LD_LIBRARY_PATH=$(pwd)/venv/lib/python3.10/site-packages/tensorflow cargo test
+````

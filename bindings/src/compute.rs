@@ -185,7 +185,6 @@ impl TF_Tensor {
 }
 
 // Computes raw offset according to format
-// TODO: unit test
 pub fn offset_from_tensor_coordinates(
     dims: &Vec<i64>,
     format: &String,
@@ -228,4 +227,127 @@ fn get_format_indices(format: &String) -> (usize, usize, usize, usize) {
         format.find("W").expect("W should be in the format"),
         format.find("C").expect("C should be in the format"),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::offset_from_tensor_coordinates;
+
+    // Our test tensor is 2x2x2x2
+    // n=0 c=0
+    // 0 1
+    // 2 3
+    // n=0 c=1
+    // 4 5
+    // 6 7
+    // n=1 c=0
+    // 8 9
+    // 10 11
+    // n=1 c=1
+    // 12 13
+    // 14 15
+
+    fn offset_test_base(raw: [u64; 16], dims: Vec<i64>, format: String) {
+        let f = offset_from_tensor_coordinates;
+
+        // n=0 c=0
+        // 0 1
+        // 2 3
+
+        assert_eq!(raw[f(&dims, &format, 0, 0, 0, 0)], 0);
+        // 1 right
+        assert_eq!(raw[f(&dims, &format, 0, 0, 1, 0)], 1);
+        // 1 down
+        assert_eq!(raw[f(&dims, &format, 0, 1, 0, 0)], 2);
+        // 1 right 1 down
+        assert_eq!(raw[f(&dims, &format, 0, 1, 1, 0)], 3);
+
+        // n=0 c=1
+        // 4 5
+        // 6 7
+
+        assert_eq!(raw[f(&dims, &format, 0, 0, 0, 1)], 4);
+        // 1 right
+        assert_eq!(raw[f(&dims, &format, 0, 0, 1, 1)], 5);
+        // 1 down
+        assert_eq!(raw[f(&dims, &format, 0, 1, 0, 1)], 6);
+        // 1 right 1 down
+        assert_eq!(raw[f(&dims, &format, 0, 1, 1, 1)], 7);
+
+        // n=1 c=0
+        // 8 9
+        // 10 11
+
+        assert_eq!(raw[f(&dims, &format, 1, 0, 0, 0)], 8);
+        // 1 right
+        assert_eq!(raw[f(&dims, &format, 1, 0, 1, 0)], 9);
+        // 1 down
+        assert_eq!(raw[f(&dims, &format, 1, 1, 0, 0)], 10);
+        // 1 right 1 down
+        assert_eq!(raw[f(&dims, &format, 1, 1, 1, 0)], 11);
+
+        // n=1 c=1
+        // 12 13
+        // 14 15
+
+        assert_eq!(raw[f(&dims, &format, 1, 0, 0, 1)], 12);
+        // 1 right
+        assert_eq!(raw[f(&dims, &format, 1, 0, 1, 1)], 13);
+        // 1 down
+        assert_eq!(raw[f(&dims, &format, 1, 1, 0, 1)], 14);
+        // 1 right 1 down
+        assert_eq!(raw[f(&dims, &format, 1, 1, 1, 1)], 15);
+    }
+
+    #[test]
+    fn tensor_offset_nchw() {
+        // Here is raw data
+        // it's first split into 2 halves addressed by n,
+        // then 2 by c (select channel), then 2 by h and finally get subpixel by w
+        let raw: [u64; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+        let dims = vec![2, 2, 2, 2];
+        let format = "NCHW".to_owned();
+
+        offset_test_base(raw, dims, format);
+    }
+
+    #[test]
+    fn tensor_offset_nhwc() {
+        // Here is raw data
+        // it's first split into 2 halves addressed by n,
+        // then 2 by h, then 2 by w and finally each pixel has 2 channels
+        let raw: [u64; 16] = [0, 4, 1, 5, 2, 6, 3, 7, 8, 12, 9, 13, 10, 14, 11, 15];
+
+        let dims: Vec<i64> = vec![2, 2, 2, 2];
+        let format = "NHWC".to_owned();
+
+        offset_test_base(raw, dims, format);
+    }
+
+    #[test]
+    fn tensor_offset_chwn() {
+        // Here is raw data
+        // it's first split into 2 halves addressed by c,
+        // then 2 by h, then 2 by w and finally select pixel by n
+        let raw: [u64; 16] = [0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15];
+
+        let dims: Vec<i64> = vec![2, 2, 2, 2];
+        let format = "CHWN".to_owned();
+
+        offset_test_base(raw, dims, format);
+    }
+
+    #[test]
+    fn tensor_offset_cnhw() {
+        // Here is raw data
+        // it's first split into 2 halves addressed by c,
+        // then 2 by n, then 2 by h and finally get pixel by w
+        let raw: [u64; 16] = [0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 12, 13, 14, 15];
+
+        let dims: Vec<i64> = vec![2, 2, 2, 2];
+        let format = "CNHW".to_owned();
+
+        offset_test_base(raw, dims, format);
+    }
 }
