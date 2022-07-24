@@ -186,7 +186,7 @@ impl TF_Tensor {
 
 // Computes raw offset according to format
 pub fn offset_from_tensor_coordinates(
-    dims: &Vec<i64>,
+    dims: &[i64],
     format: &String,
     n: usize,
     h: usize,
@@ -195,17 +195,15 @@ pub fn offset_from_tensor_coordinates(
 ) -> usize {
     assert!(dims.len() == 4);
     assert!(format.len() == 4);
-
-    let dims: Box<[i64]> = dims.clone().into_boxed_slice();
     let (ni, hi, wi, ci) = get_format_indices(format);
 
-    axis_offset(n, ni, dims.clone())
-        + axis_offset(h, hi, dims.clone())
-        + axis_offset(w, wi, dims.clone())
-        + axis_offset(c, ci, dims.clone())
+    axis_offset(n, ni, &dims)
+        + axis_offset(h, hi, &dims)
+        + axis_offset(w, wi, &dims)
+        + axis_offset(c, ci, &dims)
 }
 
-fn axis_offset(a: usize, index: usize, dims: Box<[i64]>) -> usize {
+fn axis_offset(a: usize, index: usize, dims: &[i64]) -> usize {
     // Next I use leter C as an example
     a * match index {
         // ...C, increment to C gives us 1
@@ -247,7 +245,7 @@ mod tests {
     // 12 13
     // 14 15
 
-    fn offset_test_base(raw: [u64; 16], dims: Vec<i64>, format: String) {
+    fn offset_test_base(raw: [u64; 16], dims: [i64; 4], format: String) {
         let f = offset_from_tensor_coordinates;
 
         // n=0 c=0
@@ -306,7 +304,7 @@ mod tests {
         // then 2 by c (select channel), then 2 by h and finally get subpixel by w
         let raw: [u64; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
-        let dims = vec![2, 2, 2, 2];
+        let dims = [2, 2, 2, 2];
         let format = "NCHW".to_owned();
 
         offset_test_base(raw, dims, format);
@@ -319,7 +317,7 @@ mod tests {
         // then 2 by h, then 2 by w and finally each pixel has 2 channels
         let raw: [u64; 16] = [0, 4, 1, 5, 2, 6, 3, 7, 8, 12, 9, 13, 10, 14, 11, 15];
 
-        let dims: Vec<i64> = vec![2, 2, 2, 2];
+        let dims = [2, 2, 2, 2];
         let format = "NHWC".to_owned();
 
         offset_test_base(raw, dims, format);
@@ -332,7 +330,7 @@ mod tests {
         // then 2 by h, then 2 by w and finally select pixel by n
         let raw: [u64; 16] = [0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15];
 
-        let dims: Vec<i64> = vec![2, 2, 2, 2];
+        let dims = [2, 2, 2, 2];
         let format = "CHWN".to_owned();
 
         offset_test_base(raw, dims, format);
@@ -345,7 +343,7 @@ mod tests {
         // then 2 by n, then 2 by h and finally get pixel by w
         let raw: [u64; 16] = [0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 12, 13, 14, 15];
 
-        let dims: Vec<i64> = vec![2, 2, 2, 2];
+        let dims = [2, 2, 2, 2];
         let format = "CNHW".to_owned();
 
         offset_test_base(raw, dims, format);
