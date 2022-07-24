@@ -7,16 +7,11 @@ impl TF_Status {
 }
 
 impl TF_OpKernelConstruction {
-    pub fn get_attr_string(
-        self: *mut Self,
-        attr_name: &'static str,
-    ) -> Result<String, *mut TF_Status> {
-        assert!(attr_name.ends_with("\0"), "Strings must be zero-terminated");
-
+    pub fn get_attr_size(self: *mut Self, attr_name: &str) -> Result<(i32, i32), *mut TF_Status> {
         let status_ptr = unsafe { TF_NewStatus() };
-
         let mut list_size = 0i32;
         let mut total_size = 0i32;
+
         unsafe {
             TF_OpKernelConstruction_GetAttrSize(
                 self,
@@ -27,9 +22,23 @@ impl TF_OpKernelConstruction {
             );
         }
 
-        if !status_ptr.is_ok() {
-            return Err(status_ptr);
+        if status_ptr.is_ok() {
+            Ok((list_size, total_size))
+        } else {
+            Err(status_ptr)
         }
+    }
+
+    pub fn get_attr_string(
+        self: *mut Self,
+        attr_name: &'static str,
+    ) -> Result<String, *mut TF_Status> {
+        assert!(attr_name.ends_with("\0"), "Strings must be zero-terminated");
+
+        let (list_size, total_size) = match self.get_attr_size(attr_name) {
+            Ok(value) => value,
+            Err(value) => return Err(value),
+        };
 
         assert!(list_size == -1);
 
