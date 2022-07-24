@@ -100,7 +100,7 @@ impl TF_OpKernelContext {
     pub fn allocate_output(
         self: *mut Self,
         i: i32,
-        dims: Vec<i64>,
+        dims: &Vec<i64>,
         len: u64,
     ) -> Result<*mut TF_Tensor, *mut TF_Status> {
         unsafe {
@@ -130,6 +130,10 @@ pub struct NamedDims {
     pub h: i64,
     pub w: i64,
     pub c: i64,
+    pub ni: usize,
+    pub hi: usize,
+    pub wi: usize,
+    pub ci: usize,
 }
 
 impl TF_Tensor {
@@ -154,22 +158,69 @@ impl TF_Tensor {
         dims
     }
 
-    pub fn dims_named(self: *mut Self, format: String) -> NamedDims {
+    pub fn dims_named(self: *mut Self, format: &String) -> NamedDims {
         let dims = self.dims();
 
         assert!(dims.len() == 4);
         assert!(format.len() == 4);
 
-        let ni = format.find("N").expect("N should be in the format");
-        let hi = format.find("H").expect("H should be in the format");
-        let wi = format.find("W").expect("W should be in the format");
-        let ci = format.find("C").expect("C should be in the format");
+        let (ni, hi, wi, ci) = get_format_indices(format);
 
         NamedDims {
             n: dims.get(ni).unwrap().clone(),
+            ni,
             h: dims.get(hi).unwrap().clone(),
+            hi,
             w: dims.get(wi).unwrap().clone(),
+            wi,
             c: dims.get(ci).unwrap().clone(),
+            ci,
         }
     }
+}
+
+// Computes raw offset according to format
+// TODO: unit test
+pub fn index_from_nhwc_coordinates(
+    dims: &Vec<i64>,
+    format: &String,
+    n: usize,
+    h: usize,
+    w: usize,
+    c: usize,
+) -> usize {
+    assert!(dims.len() == 4);
+    assert!(format.len() == 4);
+
+    let dims: Box<[i64]> = dims.clone().into_boxed_slice();
+    let (ni, hi, wi, ci) = get_format_indices(format);
+
+    axis_offset(n, ni, dims.clone())
+        + axis_offset(h, hi, dims.clone())
+        + axis_offset(w, wi, dims.clone())
+        + axis_offset(c, ci, dims.clone())
+}
+
+fn axis_offset(a: usize, index: usize, dims: Box<[i64]>) -> usize {
+    // Next I use leter C as an example
+    a * match index {
+        // ...C, increment to C gives us 1
+        3 => 1,
+        // ..C., 1 of C = dims[3] of elements
+        2 => dims[3] as usize,
+        // .C.., 1 of C = dims[2] of arrays sized dims[3] of elements
+        1 => (dims[2] * dims[3]) as usize,
+        // C..., 1 of C = dims[1] of 2D arrays of dims[2] of arrays sized dims[3] of elements
+        0 => (dims[1] * dims[2] * dims[3]) as usize,
+        _ => unreachable!(),
+    }
+}
+
+fn get_format_indices(format: &String) -> (usize, usize, usize, usize) {
+    (
+        format.find("N").expect("N should be in the format"),
+        format.find("H").expect("H should be in the format"),
+        format.find("W").expect("W should be in the format"),
+        format.find("C").expect("C should be in the format"),
+    )
 }

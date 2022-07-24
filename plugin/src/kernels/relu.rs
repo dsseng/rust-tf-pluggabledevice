@@ -48,7 +48,7 @@ extern "C" fn compute(_kernel: *mut ReluKernel, ctx: *mut TF_OpKernelContext) {
     let dims = input.dims();
     let output = match ctx.allocate_output(
         0,
-        dims,
+        &dims,
         (input.element_count() as u64) * (std::mem::size_of::<f32>() as u64),
     ) {
         Ok(output) => output,
