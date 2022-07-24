@@ -1,6 +1,6 @@
 use crate::{
     bindings::{
-        compute::index_from_nhwc_coordinates,
+        compute::offset_from_tensor_coordinates,
         kernels::KernelBuilder,
         raw::{TF_OpKernelConstruction, TF_OpKernelContext, TF_TensorData, TF_FLOAT},
     },
@@ -84,7 +84,7 @@ extern "C" fn compute(kernel: *mut BiasAddKernel, ctx: *mut TF_OpKernelContext) 
         for j in 0..input_dims.h as usize {
             for k in 0..input_dims.w as usize {
                 for l in 0..input_dims.c as usize {
-                    let x = index_from_nhwc_coordinates(&dims, &format, i, j, k, l);
+                    let x = offset_from_tensor_coordinates(&dims, &format, i, j, k, l);
                     output_raw[x] = input_raw[x] + bias_raw[l];
                 }
             }

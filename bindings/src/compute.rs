@@ -186,7 +186,7 @@ impl TF_Tensor {
 
 // Computes raw offset according to format
 // TODO: unit test
-pub fn index_from_nhwc_coordinates(
+pub fn offset_from_tensor_coordinates(
     dims: &Vec<i64>,
     format: &String,
     n: usize,
