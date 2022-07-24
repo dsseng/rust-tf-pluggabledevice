@@ -8,7 +8,7 @@ impl TF_Status {
 
 impl TF_OpKernelConstruction {
     pub fn get_attr_size(self: *mut Self, attr_name: &str) -> Result<(i32, i32), *mut TF_Status> {
-        let status_ptr = unsafe { TF_NewStatus() };
+        let status = unsafe { TF_NewStatus() };
         let mut list_size = 0i32;
         let mut total_size = 0i32;
 
@@ -18,14 +18,15 @@ impl TF_OpKernelConstruction {
                 attr_name.as_ptr() as *const i8,
                 &mut list_size,
                 &mut total_size,
-                status_ptr,
+                status,
             );
         }
 
-        if status_ptr.is_ok() {
+        if status.is_ok() {
+            unsafe { TF_DeleteStatus(status) };
             Ok((list_size, total_size))
         } else {
-            Err(status_ptr)
+            Err(status)
         }
     }
 
@@ -42,7 +43,7 @@ impl TF_OpKernelConstruction {
 
         assert!(list_size == -1);
 
-        let status_ptr = unsafe { TF_NewStatus() };
+        let status = unsafe { TF_NewStatus() };
         let mut val = Vec::with_capacity(total_size as usize);
 
         unsafe {
@@ -51,17 +52,18 @@ impl TF_OpKernelConstruction {
                 attr_name.as_ptr() as *const i8,
                 val.as_mut_ptr() as *mut i8,
                 total_size as u64,
-                status_ptr,
+                status,
             );
         }
-        if status_ptr.is_ok() {
+        if status.is_ok() {
             unsafe {
                 val.set_len(total_size as usize);
+                TF_DeleteStatus(status);
             }
             // Safety: will panic on invalid string
             Ok(String::from_utf8(val).unwrap())
         } else {
-            Err(status_ptr)
+            Err(status)
         }
     }
 }
@@ -69,26 +71,28 @@ impl TF_OpKernelConstruction {
 impl TF_OpKernelContext {
     // Still unsafe because of type transmutation
     pub unsafe fn get_stream<T>(self: *mut Self) -> Result<*mut T, *mut TF_Status> {
-        let status_ptr = TF_NewStatus();
-        let stream = TF_GetStream(self, status_ptr);
+        let status = TF_NewStatus();
+        let stream = TF_GetStream(self, status);
 
-        if status_ptr.is_ok() {
+        if status.is_ok() {
+            TF_DeleteStatus(status);
             Ok((*stream).stream_handle as *mut T)
         } else {
-            Err(status_ptr)
+            Err(status)
         }
     }
 
     pub fn get_input(self: *mut Self, i: i32) -> Result<*mut TF_Tensor, *mut TF_Status> {
         unsafe {
             let mut input_ptr = 0 as *mut TF_Tensor;
-            let status_ptr = TF_NewStatus();
-            TF_GetInput(self, i, &mut input_ptr, status_ptr);
+            let status = TF_NewStatus();
+            TF_GetInput(self, i, &mut input_ptr, status);
 
-            if status_ptr.is_ok() {
+            if status.is_ok() {
+                TF_DeleteStatus(status);
                 Ok(input_ptr)
             } else {
-                Err(status_ptr)
+                Err(status)
             }
         }
     }
@@ -104,7 +108,7 @@ impl TF_OpKernelContext {
         len: u64,
     ) -> Result<*mut TF_Tensor, *mut TF_Status> {
         unsafe {
-            let status_ptr = TF_NewStatus();
+            let status = TF_NewStatus();
             let output = TF_AllocateOutput(
                 self,
                 i,
@@ -112,13 +116,14 @@ impl TF_OpKernelContext {
                 dims.as_ptr(),
                 dims.len() as i32,
                 len,
-                status_ptr,
+                status,
             );
 
-            if status_ptr.is_ok() {
+            if status.is_ok() {
+                TF_DeleteStatus(status);
                 Ok(output)
             } else {
-                Err(status_ptr)
+                Err(status)
             }
         }
     }

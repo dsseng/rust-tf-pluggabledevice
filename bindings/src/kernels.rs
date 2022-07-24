@@ -83,16 +83,20 @@ impl<T> KernelBuilder<T> {
                         "Error while registering {} kernel with attribute {}",
                         self.op_name, name
                     );
+                    TF_DeleteStatus(status);
                     return;
                 }
+                TF_DeleteStatus(status);
             }
 
             let status = TF_NewStatus();
             TF_RegisterKernelBuilder(self.op_name.as_ptr() as *const i8, builder, status);
             if TF_OK != TF_GetCode(status) {
                 eprintln!("Error while registering {} kernel", self.op_name);
+                TF_DeleteStatus(status);
                 return;
             }
+            TF_DeleteStatus(status);
         }
     }
 }
