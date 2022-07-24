@@ -6,6 +6,57 @@ impl TF_Status {
     }
 }
 
+impl TF_OpKernelConstruction {
+    pub fn get_attr_string(
+        self: *mut Self,
+        attr_name: &'static str,
+    ) -> Result<String, *mut TF_Status> {
+        assert!(attr_name.ends_with("\0"), "Strings must be zero-terminated");
+
+        let status_ptr = unsafe { TF_NewStatus() };
+
+        let mut list_size = 0i32;
+        let mut total_size = 0i32;
+        unsafe {
+            TF_OpKernelConstruction_GetAttrSize(
+                self,
+                attr_name.as_ptr() as *const i8,
+                &mut list_size,
+                &mut total_size,
+                status_ptr,
+            );
+        }
+
+        if !status_ptr.is_ok() {
+            return Err(status_ptr);
+        }
+
+        assert!(list_size == -1);
+
+        let status_ptr = unsafe { TF_NewStatus() };
+        let mut val = Vec::with_capacity(total_size as usize);
+
+        unsafe {
+            TF_OpKernelConstruction_GetAttrString(
+                self,
+                attr_name.as_ptr() as *const i8,
+                val.as_mut_ptr() as *mut i8,
+                total_size as u64,
+                status_ptr,
+            );
+        }
+        if status_ptr.is_ok() {
+            unsafe {
+                val.set_len(total_size as usize);
+            }
+            // Safety: will panic on invalid string
+            Ok(String::from_utf8(val).unwrap())
+        } else {
+            Err(status_ptr)
+        }
+    }
+}
+
 impl TF_OpKernelContext {
     // Still unsafe because of type transmutation
     pub unsafe fn get_stream<T>(self: *mut Self) -> Result<*mut T, *mut TF_Status> {
