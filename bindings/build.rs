@@ -2,6 +2,16 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
+    // TODO: support other versions aside from 3.10
+    println!(
+        "cargo:rustc-link-search={}",
+        PathBuf::from("./venv/lib/python3.10/site-packages/tensorflow/")
+            .to_str()
+            .unwrap()
+    );
+    // TODO: support other OSs, not only Linux
+    println!("cargo:rustc-cdylib-link-arg=-l:libtensorflow_framework.so.2");
+
     println!("cargo:rerun-if-changed=wrapper.hh");
 
     // The bindgen::Builder is the main entry point
