@@ -19,12 +19,12 @@ impl<T> KernelBuilder<T> {
         device_type: &'static str,
     ) -> Self {
         assert!(
-            kernel_name.ends_with("\0"),
+            kernel_name.ends_with('\0'),
             "Strings must be zero-terminated"
         );
-        assert!(op_name.ends_with("\0"), "Strings must be zero-terminated");
+        assert!(op_name.ends_with('\0'), "Strings must be zero-terminated");
         assert!(
-            device_type.ends_with("\0"),
+            device_type.ends_with('\0'),
             "Strings must be zero-terminated"
         );
         Self {
@@ -39,7 +39,7 @@ impl<T> KernelBuilder<T> {
     }
 
     pub fn constraint(mut self, name: &'static str, dt: TF_DataType) -> Self {
-        assert!(name.ends_with("\0"), "Strings must be zero-terminated");
+        assert!(name.ends_with('\0'), "Strings must be zero-terminated");
         self.constraints.insert(name, dt);
         self
     }

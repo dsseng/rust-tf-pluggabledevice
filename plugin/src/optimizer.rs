@@ -1,7 +1,7 @@
 // FIXME: double free or corruption (!prev)
 // needs a proper implementation of optimizer, but I didn't port that
 // also need to decode protobuf, process it and then encode back to protobuf
-
+#[allow(clippy::module_inception)]
 pub mod optimizer {
     // use crate::{bindings::raw::*, DEVICE_TYPE, EMPTY_CSTR};
     // use std::ptr::null_mut;

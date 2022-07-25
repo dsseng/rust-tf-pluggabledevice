@@ -144,7 +144,7 @@ unsafe extern "C" fn plugin_host_memory_allocate(
     _device: *const SP_Device,
     size: u64,
 ) -> *mut std::ffi::c_void {
-    return libc::malloc(size as libc::size_t) as *mut std::ffi::c_void;
+    libc::malloc(size as libc::size_t) as *mut std::ffi::c_void
 }
 
 unsafe extern "C" fn plugin_host_memory_deallocate(
@@ -162,7 +162,7 @@ unsafe extern "C" fn plugin_get_allocator_stats(
     // FIXME
     (*stats).bytes_in_use = 123;
 
-    return 1;
+    1
 }
 
 unsafe extern "C" fn plugin_device_memory_usage(
@@ -173,7 +173,7 @@ unsafe extern "C" fn plugin_device_memory_usage(
     // FIXME
     *free = 256_000_000;
     *total = 512_000_000;
-    return 1;
+    1
 }
 
 unsafe extern "C" fn plugin_create_stream(
@@ -228,7 +228,7 @@ extern "C" fn plugin_get_event_status(
     _device: *const SP_Device,
     _event: SP_Event,
 ) -> SE_EventStatus {
-    return SE_EVENT_COMPLETE;
+    SE_EVENT_COMPLETE
 }
 
 // Inserts the specified event at the end of the specified stream.
@@ -423,13 +423,11 @@ extern "C" fn plugin_host_callback(
     _callback_fn: SE_StatusCallbackFn,
     _callback_arg: *mut std::ffi::c_void,
 ) -> u8 {
-    return 1;
+    1
 }
 
 extern "C" fn nanoseconds(timer: *mut SP_Timer_st) -> u64 {
-    unsafe {
-        return (*timer).timer_handle as u64;
-    }
+    unsafe { (*timer).timer_handle as u64 }
 }
 
 unsafe extern "C" fn plugin_create_timer_fns(

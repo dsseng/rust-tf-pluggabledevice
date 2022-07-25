@@ -24,7 +24,7 @@ pub fn init() {
         .register()
 }
 
-extern "C" fn create(construction: *mut TF_OpKernelConstruction) -> *mut BiasAddKernel {
+unsafe extern "C" fn create(construction: *mut TF_OpKernelConstruction) -> *mut BiasAddKernel {
     Box::into_raw(Box::new(BiasAddKernel {
         format: construction
             .get_attr_string("data_format\0")
@@ -32,15 +32,13 @@ extern "C" fn create(construction: *mut TF_OpKernelConstruction) -> *mut BiasAdd
     }))
 }
 
-extern "C" fn compute(kernel: *mut BiasAddKernel, ctx: *mut TF_OpKernelContext) {
-    let device_data = unsafe {
-        &*match ctx.get_stream::<String>() {
-            Ok(stream) => stream,
-            Err(status) => return ctx.failure(status),
-        }
+unsafe extern "C" fn compute(kernel: *mut BiasAddKernel, ctx: *mut TF_OpKernelContext) {
+    let device_data = &*match ctx.get_stream::<String>() {
+        Ok(stream) => stream,
+        Err(status) => return ctx.failure(status),
     };
 
-    let format = unsafe { (*kernel).format.clone() };
+    let format = (*kernel).format.clone();
     eprintln!("device: {}, format: {:#?}", device_data, format);
 
     let input = match ctx.get_input(0) {
@@ -56,7 +54,7 @@ extern "C" fn compute(kernel: *mut BiasAddKernel, ctx: *mut TF_OpKernelContext) 
     let bias_dims = bias.dims();
 
     assert!(bias_dims.len() == 1);
-    assert!(bias_dims.get(0).unwrap().clone() == input_dims.c);
+    assert!(*bias_dims.first().unwrap() == input_dims.c);
 
     let len = input.element_count() as usize;
     if len == 0 {
@@ -74,18 +72,17 @@ extern "C" fn compute(kernel: *mut BiasAddKernel, ctx: *mut TF_OpKernelContext) 
     };
 
     let input_raw: &mut [f32] =
-        unsafe { std::slice::from_raw_parts_mut(TF_TensorData(input) as *mut f32, len) };
-    let bias_raw: &mut [f32] =
-        unsafe { std::slice::from_raw_parts_mut(TF_TensorData(bias) as *mut f32, len) };
+        std::slice::from_raw_parts_mut(TF_TensorData(input) as *mut f32, len);
+    let bias_raw: &mut [f32] = std::slice::from_raw_parts_mut(TF_TensorData(bias) as *mut f32, len);
     let output_raw: &mut [f32] =
-        unsafe { std::slice::from_raw_parts_mut(TF_TensorData(output) as *mut f32, len) };
+        std::slice::from_raw_parts_mut(TF_TensorData(output) as *mut f32, len);
 
     for i in 0..input_dims.n as usize {
         for j in 0..input_dims.h as usize {
             for k in 0..input_dims.w as usize {
-                for l in 0..input_dims.c as usize {
+                for (l, current_bias) in bias_raw.iter().enumerate().take(input_dims.c as usize) {
                     let x = offset_from_tensor_coordinates(&dims, &format, i, j, k, l);
-                    output_raw[x] = input_raw[x] + bias_raw[l];
+                    output_raw[x] = input_raw[x] + current_bias;
                 }
             }
         }

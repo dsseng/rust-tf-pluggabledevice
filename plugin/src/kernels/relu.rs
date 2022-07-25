@@ -25,12 +25,10 @@ extern "C" fn create(_construction: *mut TF_OpKernelConstruction) -> *mut ReluKe
     Box::into_raw(Box::new(ReluKernel {}))
 }
 
-extern "C" fn compute(_kernel: *mut ReluKernel, ctx: *mut TF_OpKernelContext) {
-    let device_data = unsafe {
-        &*match ctx.get_stream::<String>() {
-            Ok(stream) => stream,
-            Err(status) => return ctx.failure(status),
-        }
+unsafe extern "C" fn compute(_kernel: *mut ReluKernel, ctx: *mut TF_OpKernelContext) {
+    let device_data = &*match ctx.get_stream::<String>() {
+        Ok(stream) => stream,
+        Err(status) => return ctx.failure(status),
     };
 
     eprintln!("device passed into kernel: {}", device_data);
@@ -56,9 +54,9 @@ extern "C" fn compute(_kernel: *mut ReluKernel, ctx: *mut TF_OpKernelContext) {
     };
 
     let input_raw: &mut [f32] =
-        unsafe { std::slice::from_raw_parts_mut(TF_TensorData(input) as *mut f32, len) };
+        std::slice::from_raw_parts_mut(TF_TensorData(input) as *mut f32, len);
     let output_raw: &mut [f32] =
-        unsafe { std::slice::from_raw_parts_mut(TF_TensorData(output) as *mut f32, len) };
+        std::slice::from_raw_parts_mut(TF_TensorData(output) as *mut f32, len);
 
     for i in 0..len {
         output_raw[i] = match input_raw[i] > 0f32 {
