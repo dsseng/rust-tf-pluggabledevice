@@ -6,12 +6,18 @@ The `tfp-bindings` crate mostly provides *unsafe* bindings to all TensorFlow C A
 
 Plugin itself (`tfp-plugin`) should link to that library via its `build.rs` script and implement `SE_InitPlugin` and `TF_InitKernel` functions with proper types (these are excluded from bindgen). It may also include optimizer, but it is not yet implemented in this repository.
 
+## Requirements
+- Linux, tested on Fedora 36, any should work fine.
+- MSRV not yet specified, I use nightly. No strict limits are being set.
+- Python 3 for test script. `pip3` and `venv` to install TensorFlow
+- clang for binding generation via bindgen
+
 ## Try it out
 
 ```bash
 python3.10 -m venv venv
 source venv/bin/activate
-pip3 install --no-cache-dir tf-nightly-cpu
+pip3 install --no-cache-dir tf-nightly-cpu # or tensorflow-cpu
 # https://github.com/tensorflow/tensorflow/issues/55497
 mv venv/lib64 venv/_lib64
 cargo build
