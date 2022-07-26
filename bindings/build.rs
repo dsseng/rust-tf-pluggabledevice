@@ -2,12 +2,18 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
+    println!("cargo:rerun-if-env-changed=TF_INCLUDE_PATH");
+    println!("cargo:rerun-if-env-changed=TF_LIBRARY_PATH");
+
     // TODO: support other versions aside from 3.10
     println!(
         "cargo:rustc-link-search={}",
-        PathBuf::from("./venv/lib/python3.10/site-packages/tensorflow/")
-            .to_str()
-            .unwrap()
+        PathBuf::from(
+            env::var("TF_LIBRARY_PATH")
+                .unwrap_or_else(|_| "./venv/lib/python3.10/site-packages/tensorflow/".to_owned())
+        )
+        .to_str()
+        .unwrap()
     );
     // TODO: support other OSs, not only Linux
     println!("cargo:rustc-cdylib-link-arg=-l:libtensorflow_framework.so.2");
@@ -22,9 +28,11 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .clang_arg(
             "-I".to_owned()
-                + PathBuf::from("../venv/lib/python3.10/site-packages/tensorflow/include/")
-                    .to_str()
-                    .unwrap(),
+                + PathBuf::from(env::var("TF_INCLUDE_PATH").unwrap_or_else(|_| {
+                    "../venv/lib/python3.10/site-packages/tensorflow/include/".to_owned()
+                }))
+                .to_str()
+                .unwrap(),
         )
         // Exported by plugin, not imported
         .blocklist_function("SE_InitPlugin")

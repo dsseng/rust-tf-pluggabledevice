@@ -12,6 +12,21 @@ Plugin itself (`tfp-plugin`) should link to that library via its `build.rs` scri
 - Python 3 for test script. `pip3` and `venv` to install TensorFlow
 - clang for binding generation via bindgen
 
+## Usage in other packages
+
+You can import the bindings crate by using such a dependency string. There are environment variables you can use to point the paths to TensorFlow library:
+
+- `TF_INCLUDE_PATH`
+- `TF_LIBRARY_PATH`
+
+They could be set, for example, by [Cargo project config](https://doc.rust-lang.org/nightly/cargo/reference/config.html#env)
+
+Cargo.toml example. Replace `x` by needed commit hash.
+
+```toml
+tfp-bindings = { git = "https://github.com/sh7dm/rust-tf-pluggabledevice", rev = "x" }
+```
+
 ## Try it out
 
 ```bash
